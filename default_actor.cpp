@@ -13,10 +13,10 @@
 #include "default_actor.h"
 
 #include <cmath>
-
+ 
 default_actor::default_actor(sim::actor_state& initial_state, sim::world_model& world):
-    sim::actor(initial_state, world)
-{
+    sim::actor(initial_state, world) 
+{ 
 
 }
 

@@ -1,6 +1,6 @@
 CXXFLAGS =	-O3 -std=c++11 -g -Wall -pthread -fmessage-length=0 -I. -I/usr/include/qt4/QtCore -I/usr/include/qt4/QtGui -I/usr/include/qt4 -I/usr/include/qt4/QtOpenGL
 
-OBJS =		homework_sim.o graphics.o moc_gr.o default_actor.o
+OBJS =		homework_sim.o graphics.o moc_gr.o default_actor.o new_actor.o
 
 LIBS =		lib/libsimulator.a -lGL -lGLU -lglut -lQtGui -lQtCore -lQtOpenGL
 

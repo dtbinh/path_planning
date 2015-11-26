@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include "lib/simulator.h"
-#include "default_actor.h"
+#include "new_actor.h"
 #include "graphics.h"
 
 int main(void) {
@@ -11,9 +11,9 @@ int main(void) {
     sim::simulator simulator;
     sim_graphics_wrapper graphics;
 
-    std::unique_ptr<sim::actor_factory> factory = std::move(std::unique_ptr<sim::actor_factory>(new default_actor_factory));
+    std::unique_ptr<sim::actor_factory> actors = std::move(std::unique_ptr<sim::actor_factory>(new new_actor_factory));
 
-    simulator.initialize(std::move(factory), 1);
+    simulator.initialize(std::move(actors), 10);
     graphics.initialize(simulator.get_world());
 
     while(1){
