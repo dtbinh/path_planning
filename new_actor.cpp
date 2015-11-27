@@ -36,7 +36,7 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
     std::map<guid, sim::actor_state> actors = w_state.actor_states;
     float theta_dev = 0;
     float dist = 0;
-    float dist_threshold = 0.1;
+    float dist_threshold = 0.01;
     float w_target = 1;
     float w_collision = -1;
 
@@ -57,8 +57,8 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
         // std::cout << "angle_to_actor: " << theta_dev*180/M_PI << std::endl;
         if(dist > dist_threshold)
         {
-            collision_avoid.x += (1/dist)*sin(theta_dev);
-            collision_avoid.y += (1/dist)*cos(theta_dev);
+            collision_avoid.x += exp(-1*dist)*sin(theta_dev);
+            collision_avoid.y += exp(-1*dist)*cos(theta_dev);
         }
     }
 
