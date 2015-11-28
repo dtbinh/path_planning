@@ -31,45 +31,47 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
     sim::actor_command cmd;
 
     geometry::point_2d disp_vector = {0, 0};
-    geometry::point_2d collision_avoid = {0, 0};
+    geometry::point_2d avoid_coll = {0, 0};
     geometry::point_2d zero= {0, 0};
+
     std::map<guid, sim::actor_state> actors = w_state.actor_states;
+    std::map<guid, world::corner> corners = w_model.corners;
+
     float theta_dev = 0;
     float dist = 0;
     float dist_threshold = 0.01;
     float w_target = 1;
     float w_collision = -1;
 
-    // std::cout << "Agent ID:" << a_state.id << "\t: [" << a_state.pose.position.x << ", " << a_state.pose.position.y << "]\n";
+    for(auto corner: corners)
+    {
+        // std::cout << "Corner Id: " << corner.first << "\n\tUpper Left:   [" << corner.second.bounding_box.upper_left.x << ", " << corner.second.bounding_box.upper_left.y << "]";
+        // std::cout << "\n\tBottom Right: [" << corner.second.bounding_box.lower_right.x << ", " << corner.second.bounding_box.lower_right.y << "]\n";
+
+        if(in_corner(a_state.pose.position, corner.second.bounding_box))
+            std::cout << "Actor: " << a_state.id << "in corner: " << corner.first << std::endl;
+    }
 
     for(auto actor : actors)
     {
         if(actor.first == a_state.id)
             continue;
 
-
         disp_vector.x = actor.second.pose.position.x - a_state.pose.position.x;
         disp_vector.y = actor.second.pose.position.y - a_state.pose.position.y;
-        // std::cout << "Agent ID:" << actor.first << "\tDisp Vector: [" << disp_vector.x << ", " << disp_vector.y << "]\n";
         theta_dev = atan2(disp_vector.y, disp_vector.x);
         dist = eucledian_dist(disp_vector, zero);
-        // std::cout << "dist: " << dist << std::endl;
-        // std::cout << "angle_to_actor: " << theta_dev*180/M_PI << std::endl;
-        if(dist > dist_threshold)
-        {
-            collision_avoid.x += exp(-1*dist)*sin(theta_dev);
-            collision_avoid.y += exp(-1*dist)*cos(theta_dev);
-        }
+
+        avoid_coll.x += exp(-5*dist)*sin(theta_dev);
+        avoid_coll.y += exp(-5*dist)*cos(theta_dev);
     }
 
-    dist = eucledian_dist(collision_avoid, zero);
+    dist = eucledian_dist(avoid_coll, zero);
     if(dist > dist_threshold)
     {
-        collision_avoid.x = collision_avoid.x/dist;
-        collision_avoid.y = collision_avoid.y/dist;
+        avoid_coll.x = avoid_coll.x/dist;
+        avoid_coll.y = avoid_coll.y/dist;
     }
-
-    // std::cout << "collision_avoid: [" << collision_avoid.x << ", " << collision_avoid.y << "]\n\n";
 
     disp_vector.x = tc.center.x - a_state.pose.position.x;
     disp_vector.y = tc.center.y - a_state.pose.position.y;
@@ -81,18 +83,37 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
         disp_vector.y = disp_vector.y/dist;
     }
 
-    w_target = 1.5;
+    w_target = 1.2;
     w_collision = -1;
 
-    disp_vector.x = w_target*disp_vector.x + w_collision*collision_avoid.x;
-    disp_vector.y = w_target*disp_vector.y + w_collision*collision_avoid.y;
+    disp_vector.x = w_target*disp_vector.x + w_collision*avoid_coll.x;
+    disp_vector.y = w_target*disp_vector.y + w_collision*avoid_coll.y;
 
     cmd.heading_rad = atan2(disp_vector.y, disp_vector.x);
-    cmd.velocity_mps = 1.34; //this is typical human walking speed in meters per second;
+    // cmd.velocity_mps = 1.34; //this is typical human walking speed in meters per second;
+    cmd.velocity_mps = 0;
+
     return cmd;
 }
 
 float new_actor::eucledian_dist(geometry::point_2d pt_1, geometry::point_2d pt_2)
 {
     return sqrt(pow(pt_2.y - pt_1.y, 2) + pow(pt_2.x - pt_1.x, 2));
+}
+
+bool new_actor::in_corner(const geometry::point_2d actor_pt, const geometry::box_2d corner_box)
+{
+    if(actor_pt.x <= corner_box.upper_left.x)
+        return false;
+
+    if(actor_pt.y <= corner_box.upper_left.y)
+        return false;
+
+    if(actor_pt.x >= corner_box.lower_right.x)
+        return false;
+
+    if(actor_pt.y >= corner_box.lower_right.y)
+        return false;
+
+    return true;
 }

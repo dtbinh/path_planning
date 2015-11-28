@@ -24,6 +24,7 @@ public:
 private:
     sim::actor_command act_(sim::world_state& w_state) override;
     float eucledian_dist(geometry::point_2d pt_1, geometry::point_2d pt_2);
+    bool in_corner(const geometry::point_2d actor_pt, const geometry::box_2d corner_box);
 };
 
 class new_actor_factory: public sim::actor_factory
@@ -34,7 +35,6 @@ public:
     {
         return std::move(std::unique_ptr<sim::actor>(new new_actor(initial_state, world)));
     }
-
 };
 
 #endif // DEFAULT_ACTOR_H_
