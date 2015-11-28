@@ -30,27 +30,23 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
 
     sim::actor_command cmd;
 
-    geometry::point_2d disp_vector = {0, 0};
-    geometry::point_2d avoid_coll = {0, 0};
-    geometry::point_2d zero= {0, 0};
+    geometry::point_2d disp_vector = {0.0f, 0.0f};
+    geometry::point_2d avoid_coll = {0.0f, 0.0f};
+    geometry::point_2d zero= {0.0f, 0.0f};
 
     std::map<guid, sim::actor_state> actors = w_state.actor_states;
     std::map<guid, world::corner> corners = w_model.corners;
 
-    float theta_dev = 0;
-    float dist = 0;
-    float dist_threshold = 0.01;
-    float w_target = 1;
-    float w_collision = -1;
+    float theta_dev = 0.0f;
+    float dist = 0.0f;
+    float dist_threshold = 0.01f;
+    float w_target = 1.0f;
+    float w_collision = -1.0f;
 
+    std::cout << "Actor: " << a_state.id << ",\t current position: [" << a_state.pose.position.x << ", " << a_state.pose.position.y << "]";
     for(auto corner: corners)
-    {
-        // std::cout << "Corner Id: " << corner.first << "\n\tUpper Left:   [" << corner.second.bounding_box.upper_left.x << ", " << corner.second.bounding_box.upper_left.y << "]";
-        // std::cout << "\n\tBottom Right: [" << corner.second.bounding_box.lower_right.x << ", " << corner.second.bounding_box.lower_right.y << "]\n";
-
         if(in_corner(a_state.pose.position, corner.second.bounding_box))
-            std::cout << "Actor: " << a_state.id << "in corner: " << corner.first << std::endl;
-    }
+            break;
 
     for(auto actor : actors)
     {
@@ -91,7 +87,7 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
 
     cmd.heading_rad = atan2(disp_vector.y, disp_vector.x);
     // cmd.velocity_mps = 1.34; //this is typical human walking speed in meters per second;
-    cmd.velocity_mps = 0;
+    cmd.velocity_mps = 0.1;
 
     return cmd;
 }
@@ -103,16 +99,16 @@ float new_actor::eucledian_dist(geometry::point_2d pt_1, geometry::point_2d pt_2
 
 bool new_actor::in_corner(const geometry::point_2d actor_pt, const geometry::box_2d corner_box)
 {
-    if(actor_pt.x <= corner_box.upper_left.x)
+    if(actor_pt.x < corner_box.upper_left.x)
         return false;
 
-    if(actor_pt.y <= corner_box.upper_left.y)
+    if(actor_pt.y > corner_box.upper_left.y)
         return false;
 
-    if(actor_pt.x >= corner_box.lower_right.x)
+    if(actor_pt.x > corner_box.lower_right.x)
         return false;
 
-    if(actor_pt.y >= corner_box.lower_right.y)
+    if(actor_pt.y < corner_box.lower_right.y)
         return false;
 
     return true;

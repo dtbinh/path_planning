@@ -21,6 +21,9 @@ int main(void) {
         simulator.step(dt);
         graphics.update_state(simulator.get_state());
         usleep(dt * 1000000);
+        sleep(1);
+        int n = system("clear");
+        std::cout << n << std::endl;
     }
 
     return 0;
