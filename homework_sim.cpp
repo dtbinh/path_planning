@@ -12,7 +12,7 @@ int main(void) {
 
     std::unique_ptr<sim::actor_factory> actors = std::move(std::unique_ptr<sim::actor_factory>(new new_actor_factory));
 
-    simulator.initialize(std::move(actors), 10);
+    simulator.initialize(std::move(actors), 20);
     graphics.initialize(simulator.get_world());
 
     while(1){

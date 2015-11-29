@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <memory>
+#include <cstdlib>
 
 #include <chrono>
 

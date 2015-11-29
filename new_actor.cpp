@@ -22,8 +22,12 @@ new_actor::new_actor(sim::actor_state& initial_state, sim::world_model& world):
     ref_corner  = 0;
     w_t         = 1.2f;
     w_c         = -1.0f;
-    speed       = 1.34f;    // This is the typical human walking speed in mps
-    coll_param  = -3.0f;
+
+    // (1.34 +- 0.1) mps is the typical walking speed of humans.
+    speed       = 124 + (float)(rand()%20);
+    speed       = speed/100;
+
+    coll_param  = -0.0f;
 }
 
 // Destructor
@@ -52,11 +56,13 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
     // Utility variables
     float theta_dev         = 0.0f;     // Placeholder for angles
     float dist              = 0.0f;     // Placeholder for distances
-    float dist_threshold    = 0.01f;    // Threshold to avoid dividing by zero
+    float dist_threshold    = 0.0f;    // Threshold to avoid dividing by zero
     float corner_dist       = 0.2f;     // Distance for successfully reaching a corner
 
     // Default speed, this is the walking speed of humans in mps
     speed = 1.34f;
+    w_t   = 1.2f;
+    w_c   = -1.0f;
 
     // Compute current corner of actor and store it in ref_corner
     for(auto corner: w_model.corners)
@@ -188,7 +194,8 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
 
         theta_dev = atan2(disp_vector.y, disp_vector.x);
         dist = eucledian_dist(disp_vector, zero);
-        avoid_coll = {avoid_coll.x + exp(coll_param*dist)*sin(theta_dev), avoid_coll.y + exp(coll_param*dist)*cos(theta_dev)};
+        if(dist < 1.0f)
+            avoid_coll = {avoid_coll.x + exp(coll_param*dist)*sin(theta_dev), avoid_coll.y + exp(coll_param*dist)*cos(theta_dev)};
     }
 
     dist = eucledian_dist(avoid_coll, zero);
