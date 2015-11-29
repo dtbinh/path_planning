@@ -22,6 +22,8 @@ public:
     ~new_actor();
 
 private:
+    guid rc_id;
+    guid temp_corner;
     sim::actor_command act_(sim::world_state& w_state) override;
     float eucledian_dist(geometry::point_2d pt_1, geometry::point_2d pt_2);
     bool in_corner(const geometry::point_2d actor_pt, const geometry::box_2d corner_box);

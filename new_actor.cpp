@@ -16,39 +16,116 @@
 
 new_actor::new_actor(sim::actor_state& initial_state, sim::world_model& world):
     sim::actor(initial_state, world)
-{
-
-}
+{}
 
 sim::actor_command new_actor::act_(sim::world_state& w_state)
 {
     sim::actor_state a_state = get_state();
     sim::world_model w_model = get_world();
 
-    guid target_corner = a_state.target_corner;
-    world::corner& tc = w_model.corners[target_corner];
+    guid target_corner  = a_state.target_corner;
+    world::corner& tc   = w_model.corners[target_corner];
 
-    sim::actor_command cmd;
+    sim::actor_command cmd = {0.0f, 0.0f};
 
-    geometry::point_2d disp_vector = {0.0f, 0.0f};
-    geometry::point_2d avoid_coll = {0.0f, 0.0f};
-    geometry::point_2d zero= {0.0f, 0.0f};
-
-    std::map<guid, sim::actor_state> actors = w_state.actor_states;
-    std::map<guid, world::corner> corners = w_model.corners;
+    geometry::point_2d disp_vector  = {0.0f, 0.0f};
+    geometry::point_2d target_vector= {0.0f, 0.0f};
+    geometry::point_2d avoid_coll   = {0.0f, 0.0f};
+    geometry::point_2d zero         = {0.0f, 0.0f};
 
     float theta_dev = 0.0f;
     float dist = 0.0f;
     float dist_threshold = 0.01f;
-    float w_target = 1.0f;
-    float w_collision = -1.0f;
+    float wt = 0.0f;
+    float wc = 0.0f;
+    float speed = 0.0f;
 
-    std::cout << "Actor: " << a_state.id << ",\t current position: [" << a_state.pose.position.x << ", " << a_state.pose.position.y << "]";
-    for(auto corner: corners)
+    for(auto corner: w_model.corners)
+    {
         if(in_corner(a_state.pose.position, corner.second.bounding_box))
+        {
+            rc_id = corner.first;
             break;
+        }
+    }
 
-    for(auto actor : actors)
+    auto rc = w_model.corners[rc_id];
+
+    if(in_corner(a_state.pose.position, rc.bounding_box))
+    {
+        auto crosswalk_1 = w_model.crosswalks[rc.crosswalks[0]];
+        auto crosswalk_2 = w_model.crosswalks[rc.crosswalks[1]];
+        if(crosswalk_1.corner_1 == target_corner || crosswalk_1.corner_2 == target_corner)
+        {
+            temp_corner = target_corner;
+            if(w_state.signal_states[crosswalk_1.signal_id] == 1)
+            {
+                target_vector = {tc.center.x - a_state.pose.position.x, tc.center.y - a_state.pose.position.y};
+                speed = 1.34f;
+            }
+
+            else
+                speed = 0.0f;
+        }
+
+        else if(crosswalk_2.corner_1 == target_corner || crosswalk_2.corner_2 == target_corner)
+        {
+            temp_corner = target_corner;
+            if(w_state.signal_states[crosswalk_2.signal_id] == 1)
+            {
+                target_vector = {tc.center.x - a_state.pose.position.x, tc.center.y - a_state.pose.position.y};
+                speed = 1.34f;
+            }
+
+            else
+                speed = 0.0f;
+        }
+
+        else
+        {
+            if(w_state.signal_states[crosswalk_1.signal_id] == 1)
+            {
+                if(rc_id == w_model.corners[crosswalk_1.corner_1].id)
+                {
+                    target_vector = {w_model.corners[crosswalk_1.corner_2].center.x - a_state.pose.position.x, w_model.corners[crosswalk_1.corner_2].center.y - a_state.pose.position.y};
+                    temp_corner = crosswalk_1.corner_2;
+                }
+
+                else
+                {
+                    target_vector = {w_model.corners[crosswalk_1.corner_1].center.x - a_state.pose.position.x, w_model.corners[crosswalk_1.corner_1].center.y - a_state.pose.position.y};
+                    temp_corner = crosswalk_1.corner_1;
+                }
+
+                speed = 1.34f;
+            }
+
+            else
+            {
+                if(rc_id == w_model.corners[crosswalk_2.corner_1].id)
+                {
+                    target_vector = {w_model.corners[crosswalk_2.corner_2].center.x - a_state.pose.position.x, w_model.corners[crosswalk_2.corner_2].center.y - a_state.pose.position.y};
+                    temp_corner = crosswalk_2.corner_2;
+                }
+
+                else
+                {
+                    target_vector = {w_model.corners[crosswalk_2.corner_1].center.x - a_state.pose.position.x, w_model.corners[crosswalk_2.corner_1].center.y - a_state.pose.position.y};
+                    temp_corner = crosswalk_2.corner_1;
+                }
+
+                speed = 1.34f;
+            }
+        }
+    }
+
+    else
+    {
+        target_vector = {w_model.corners[temp_corner].center.x - a_state.pose.position.x, w_model.corners[temp_corner].center.y - a_state.pose.position.y};
+        speed = 1.34f;
+    }
+
+    for(auto actor : w_state.actor_states)
     {
         if(actor.first == a_state.id)
             continue;
@@ -69,25 +146,22 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
         avoid_coll.y = avoid_coll.y/dist;
     }
 
-    disp_vector.x = tc.center.x - a_state.pose.position.x;
-    disp_vector.y = tc.center.y - a_state.pose.position.y;
-    dist = eucledian_dist(disp_vector, zero);
+    dist = eucledian_dist(target_vector, zero);
 
     if(dist > dist_threshold)
     {
-        disp_vector.x = disp_vector.x/dist;
-        disp_vector.y = disp_vector.y/dist;
+        target_vector.x = target_vector.x/dist;
+        target_vector.y = target_vector.y/dist;
     }
 
-    w_target = 1.2;
-    w_collision = -1;
+    wt = 1.2f;
+    wc = -1.0f;
 
-    disp_vector.x = w_target*disp_vector.x + w_collision*avoid_coll.x;
-    disp_vector.y = w_target*disp_vector.y + w_collision*avoid_coll.y;
+    disp_vector.x = wt*target_vector.x + wc*avoid_coll.x;
+    disp_vector.y = wt*target_vector.y + wc*avoid_coll.y;
 
     cmd.heading_rad = atan2(disp_vector.y, disp_vector.x);
-    // cmd.velocity_mps = 1.34; //this is typical human walking speed in meters per second;
-    cmd.velocity_mps = 0.1;
+    cmd.velocity_mps = speed; //this is typical human walking speed in meters per second;
 
     return cmd;
 }

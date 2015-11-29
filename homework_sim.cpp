@@ -13,17 +13,17 @@ int main(void) {
 
     std::unique_ptr<sim::actor_factory> actors = std::move(std::unique_ptr<sim::actor_factory>(new new_actor_factory));
 
-    simulator.initialize(std::move(actors), 10);
+    simulator.initialize(std::move(actors), 2);
     graphics.initialize(simulator.get_world());
 
     while(1){
-        double dt = 0.01;
+        double dt = 0.1;
         simulator.step(dt);
         graphics.update_state(simulator.get_state());
         usleep(dt * 1000000);
-        sleep(1);
-        int n = system("clear");
-        std::cout << n << std::endl;
+        // std::cin.ignore();
+        // int n = system("clear");
+        // std::cout << n << std::endl;
     }
 
     return 0;
