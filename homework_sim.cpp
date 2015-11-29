@@ -1,6 +1,5 @@
 #include <iostream>
 #include <cmath>
-#include <unistd.h>
 
 #include "lib/simulator.h"
 #include "new_actor.h"
@@ -21,9 +20,6 @@ int main(void) {
         simulator.step(dt);
         graphics.update_state(simulator.get_state());
         usleep(dt * 1000000);
-        // std::cin.ignore();
-        // int n = system("clear");
-        // std::cout << n << std::endl;
     }
 
     return 0;
