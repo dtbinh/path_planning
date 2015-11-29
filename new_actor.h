@@ -45,6 +45,9 @@ private:
     // Speed of actor
     float speed;
 
+    // Exponent parameter for collision avoidance
+    float coll_param;
+
     // method to determine action taken by actor at each time step
     sim::actor_command act_(sim::world_state& w_state) override;
 
