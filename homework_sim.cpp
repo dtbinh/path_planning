@@ -22,8 +22,8 @@ int main(void) {
         graphics.update_state(simulator.get_state());
         usleep(dt * 1000000);
         // std::cin.ignore();
-        int n = system("clear");
-        std::cout << n << std::endl;
+        // int n = system("clear");
+        // std::cout << n << std::endl;
     }
 
     return 0;
