@@ -22,7 +22,7 @@ public:
     ~new_actor();
 
 private:
-    guid rc_id;
+    guid ref_corner;
     guid temp_corner;
     sim::actor_command act_(sim::world_state& w_state) override;
     float eucledian_dist(geometry::point_2d pt_1, geometry::point_2d pt_2);

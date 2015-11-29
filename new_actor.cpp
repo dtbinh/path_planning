@@ -44,15 +44,29 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
     {
         if(in_corner(a_state.pose.position, corner.second.bounding_box))
         {
-            rc_id = corner.first;
+            ref_corner = corner.first;
             break;
         }
     }
 
-    auto rc = w_model.corners[rc_id];
+    auto rc = w_model.corners[ref_corner];
 
-    if(in_corner(a_state.pose.position, rc.bounding_box))
+    if(ref_corner == target_corner)
     {
+        std::cout << "In target corner\n";
+        target_vector = {tc.center.x - a_state.pose.position.x, tc.center.y - a_state.pose.position.y};
+        speed = 1.34f;
+    }
+
+    // else if(temp_corner == target_corner)
+    // {
+    //     target_vector = {w_model.corners[ref_corner].center.x - a_state.pose.position.x, w_model.corners[ref_corner].center.y - a_state.pose.position.y};
+    //     speed = 1.34f;
+    // }
+
+    else if(in_corner(a_state.pose.position, rc.bounding_box))
+    {
+        std::cout << "In a corner, but not target\n";
         auto crosswalk_1 = w_model.crosswalks[rc.crosswalks[0]];
         auto crosswalk_2 = w_model.crosswalks[rc.crosswalks[1]];
         if(crosswalk_1.corner_1 == target_corner || crosswalk_1.corner_2 == target_corner)
@@ -85,7 +99,7 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
         {
             if(w_state.signal_states[crosswalk_1.signal_id] == 1)
             {
-                if(rc_id == w_model.corners[crosswalk_1.corner_1].id)
+                if(ref_corner == w_model.corners[crosswalk_1.corner_1].id)
                 {
                     target_vector = {w_model.corners[crosswalk_1.corner_2].center.x - a_state.pose.position.x, w_model.corners[crosswalk_1.corner_2].center.y - a_state.pose.position.y};
                     temp_corner = crosswalk_1.corner_2;
@@ -100,9 +114,9 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
                 speed = 1.34f;
             }
 
-            else
+            else if(w_state.signal_states[crosswalk_2.signal_id] == 1)
             {
-                if(rc_id == w_model.corners[crosswalk_2.corner_1].id)
+                if(ref_corner == w_model.corners[crosswalk_2.corner_1].id)
                 {
                     target_vector = {w_model.corners[crosswalk_2.corner_2].center.x - a_state.pose.position.x, w_model.corners[crosswalk_2.corner_2].center.y - a_state.pose.position.y};
                     temp_corner = crosswalk_2.corner_2;
@@ -116,11 +130,15 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
 
                 speed = 1.34f;
             }
+
+            else
+                speed = 0.0f;
         }
     }
 
     else
     {
+        std::cout << "On crosswalk between reference and temp target\n";
         target_vector = {w_model.corners[temp_corner].center.x - a_state.pose.position.x, w_model.corners[temp_corner].center.y - a_state.pose.position.y};
         speed = 1.34f;
     }
@@ -162,6 +180,8 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
 
     cmd.heading_rad = atan2(disp_vector.y, disp_vector.x);
     cmd.velocity_mps = speed; //this is typical human walking speed in meters per second;
+
+    std::cout << "ref:    " << ref_corner << "\ntemp:   " << temp_corner << "\ntarget: " << target_corner << "\n";
 
     return cmd;
 }
