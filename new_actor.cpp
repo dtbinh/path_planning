@@ -23,11 +23,13 @@ new_actor::new_actor(sim::actor_state& initial_state, sim::world_model& world):
     w_t         = 1.2f;
     w_c         = -1.0f;
 
+    srand(time(NULL));
+
     // (1.34 +- 0.1) mps is the typical walking speed of humans.
     speed       = 124 + (float)(rand()%20);
     speed       = speed/100;
 
-    coll_param  = -0.0f;
+    coll_param  = -0.1f;
 }
 
 // Destructor
@@ -54,15 +56,14 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
     geometry::point_2d zero         = {0.0f, 0.0f};     // Reference vector
 
     // Utility variables
-    float theta_dev         = 0.0f;     // Placeholder for angles
     float dist              = 0.0f;     // Placeholder for distances
     float dist_threshold    = 0.0f;    // Threshold to avoid dividing by zero
-    float corner_dist       = 0.2f;     // Distance for successfully reaching a corner
+    float corner_dist       = 0.1f;     // Distance for successfully reaching a corner
+    float sp                = speed;
 
     // Default speed, this is the walking speed of humans in mps
-    speed = 1.34f;
-    w_t   = 1.2f;
-    w_c   = -1.0f;
+    w_t = 1.2f;
+    w_c = -1.0f;
 
     // Compute current corner of actor and store it in ref_corner
     for(auto corner: w_model.corners)
@@ -112,7 +113,7 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
 
             // Queueing up actors in corner
             else
-                speed = 0.0f;
+                sp = 0.0f;
         }
 
         // Target corner is on crosswalk 2
@@ -130,7 +131,7 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
 
             // Queueing up actors in corner
             else
-                speed = 0.0f;
+                sp = 0.0f;
         }
 
         // Target corner is not one cross-walk away. Checking if cross-walk 1 signal status is GO
@@ -175,13 +176,18 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
 
         // Queueing up actors in corner
         else
-            speed = 0.0f;
+            sp = 0.0f;
     }
 
     // Case: When actor is on cross-walk
     else
         target_vector = {w_model.corners[temp_corner].center.x - a_state.pose.position.x,
                         w_model.corners[temp_corner].center.y - a_state.pose.position.y};
+
+    // Normalizing target velocity
+    dist = eucledian_dist(target_vector, zero);
+    if(dist > dist_threshold)
+        target_vector = {target_vector.x/dist, target_vector.y/dist};
 
     // This loop computes collision avoidance vector from current actor to other actors
     for(auto actor : w_state.actor_states)
@@ -192,25 +198,29 @@ sim::actor_command new_actor::act_(sim::world_state& w_state)
         disp_vector = {actor.second.pose.position.x - a_state.pose.position.x,
                         actor.second.pose.position.y - a_state.pose.position.y};
 
-        theta_dev = atan2(disp_vector.y, disp_vector.x);
         dist = eucledian_dist(disp_vector, zero);
-        if(dist < 1.0f)
-            avoid_coll = {avoid_coll.x + exp(coll_param*dist)*sin(theta_dev), avoid_coll.y + exp(coll_param*dist)*cos(theta_dev)};
+        if(dist < 1.25f)        // 1.25m is the personal space of the actor
+            avoid_coll = {avoid_coll.x + exp(coll_param*dist)*disp_vector.x,
+                            avoid_coll.y + exp(coll_param*dist)*disp_vector.y};
     }
 
+    // Normalizing collision avoidance
     dist = eucledian_dist(avoid_coll, zero);
     if(dist > dist_threshold)
         avoid_coll = {avoid_coll.x/dist, avoid_coll.y/dist};
 
-    dist = eucledian_dist(target_vector, zero);
-    if(dist > dist_threshold)
-        target_vector = {target_vector.x/dist, target_vector.y/dist};
-
+    // Superimpose weighted collision avoidance vector onto weighted velocity vector
     disp_vector = {w_t*target_vector.x + w_c*avoid_coll.x,
                     w_t*target_vector.y + w_c*avoid_coll.y};
 
+    // saturating the speed of the actor to its walking speed
+    dist = eucledian_dist(disp_vector, zero);
+    if(sp == 0)
+        sp = dist > speed ? speed : dist;
+
+    // Setting the command variable of actor
     cmd.heading_rad = atan2(disp_vector.y, disp_vector.x);
-    cmd.velocity_mps = speed;
+    cmd.velocity_mps = sp;
 
     return cmd;
 }

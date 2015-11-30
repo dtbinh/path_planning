@@ -48,6 +48,9 @@ private:
     // Exponent parameter for collision avoidance
     float coll_param;
 
+    // Size of personal space
+    double personal_dist;
+
     // method to determine action taken by actor at each time step
     sim::actor_command act_(sim::world_state& w_state) override;
 
